@@ -2,6 +2,7 @@ package com.kaio.dev.domain.workout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kaio.dev.config.exception.RegraDeNegocioException;
+import com.kaio.dev.domain.sheet.SheetService;
 import com.kaio.dev.domain.workout.dto.CreateWorkoutDTO;
 import com.kaio.dev.domain.workout.dto.WorkoutResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,9 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -18,12 +21,27 @@ import java.util.List;
 public class WorkoutService {
 
     private final WorkoutRepository repository;
+    private final SheetService sheetService;
     private final ObjectMapper objectMapper;
 
-    public WorkoutResponseDTO createWorkout(CreateWorkoutDTO workoutDTO) {
-        Workout workout = objectMapper.convertValue(workoutDTO, Workout.class);
+    public WorkoutResponseDTO createWorkout(String nome, Integer repeticoes,
+            Integer series, Boolean isCompleted, MultipartFile file) throws IOException {
+        Workout workout = new Workout();
 
-        return objectMapper.convertValue(repository.save(workout), WorkoutResponseDTO.class);
+        workout.setNome(nome);
+        workout.setRepeticoes(repeticoes);
+        workout.setSeries(series);
+        workout.setIsCompleted(isCompleted);
+        workout.setFoto(file.getBytes());
+
+        return  objectMapper.convertValue(repository.save(workout), WorkoutResponseDTO.class);
+    }
+
+
+    public WorkoutResponseDTO addWorkoutInSheet(Long id, Long sheetID) throws RegraDeNegocioException {
+        Workout workout = buscarPorId(id);
+        workout.setSheet(sheetService.buscarPorId(sheetID));
+        return  objectMapper.convertValue(repository.save(workout), WorkoutResponseDTO.class);
     }
 
     public Page<WorkoutResponseDTO> searchWorkout(
@@ -59,7 +77,18 @@ public class WorkoutService {
         );
     }
 
+    public WorkoutResponseDTO updateWorkout(Long id, CreateWorkoutDTO workoutDTO) throws RegraDeNegocioException {
+        Workout workout = buscarPorId(id);
 
+        workout.setNome(workoutDTO.getNome());
+        workout.setRepeticoes(workoutDTO.getRepeticoes());
+        workout.setSeries(workoutDTO.getSeries());
+        workout.setFoto(workout.getFoto());
+
+        repository.save(workout);
+
+        return objectMapper.convertValue(workout, WorkoutResponseDTO.class);
+    }
 
     public void removeWorkout(Long id) throws RegraDeNegocioException {
         Workout workout = buscarPorId(id);

@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class WorkoutResponseDTO extends CreateWorkoutDTO{
 
-    private Long workoutId;
+    private Long workoutID;
 }
